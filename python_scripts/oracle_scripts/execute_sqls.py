@@ -33,7 +33,7 @@ def create_db_user(name, pas):
 
 def get_oracle_connection(usrname='system', passw='oracle'):
     try:
-        return cx_Oracle.connect(usrname, passw, "192.168.1.149:1521/orcl" )
+        return cx_Oracle.connect(usrname, passw, "192.168.122.1:1521/orcl" )
     except cx_Oracle.DatabaseError as exc:
         err, = exc.args
         print("Oracle-Error-Code:", err.code)
@@ -97,7 +97,8 @@ def save_to_db_csv_line(csv_line_data, cursor):
         return
     abbrv = csv_line_data[0]
     tag = csv_line_data[len(csv_line_data) - 1]
-    meaning = (','.join(csv_line_data[1:-1]))
+    csv_line_data = [item.strip() for item in csv_line_data[1:-1]]
+    meaning = (','.join(csv_line_data))
     sql_to_execute = get_row_insert_sql(abbrv, meaning, tag)
     execute_queries(sql_to_execute, cursor)
 
@@ -120,6 +121,7 @@ def sorkr_fill_db(conn):
 
 connection = get_oracle_connection('sma', 'sma')
 #create_tables(connection)
+#army_fill_db(connection)
 #chemi_fill_db(connection)
 #historical_places_fill_db(connection)
 
@@ -128,9 +130,8 @@ connection = get_oracle_connection('sma', 'sma')
 
 #science_miscel_fill_db(connection)
 
-sorkr_fill_db(connection)
+#sorkr_fill_db(connection)
 
-#execute_queries(sql, cursor)
 
 #create_db_user("sma", "sma")
 
