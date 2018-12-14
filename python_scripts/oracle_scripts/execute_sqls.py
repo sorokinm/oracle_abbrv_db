@@ -1,5 +1,6 @@
 import cx_Oracle
 import os
+import re
 os.environ["NLS_LANG"] = ".AL32UTF8"
 
 
@@ -13,7 +14,13 @@ def execute_queries(query_with_semicolon, cursor):
     for query in query_list:
         query = query.strip()
         if len(query) != 0:
-            cursor.execute(query)
+            try:
+                cursor.execute(query)
+            except Exception as inst:
+                print("Error:")
+                print(type(inst))  # the exception instance
+                print(query)
+
 
 
 def create_db_user(name, pas):
@@ -38,6 +45,7 @@ def create_tables(conn):
     cursor = conn.cursor()
     execute_queries(sql, cursor)
 
+
 def get_row_insert_sql(abbrv_name, abbrv_meaning, abbrv_tag):
     sql = get_data_from_file('sql_scripts/insert_abbrv_row.sql')
     sql = sql.replace(":abbrv_name", "'{}'".format(abbrv_name))
@@ -46,36 +54,81 @@ def get_row_insert_sql(abbrv_name, abbrv_meaning, abbrv_tag):
     return sql
 
 
-def army_fill_db():
-    connection = get_oracle_connection('sma', 'sma')
+def army_fill_db(connection):
+    fill_db_with_default_tag("../../csvs/army.csv", 'Армия', connection)
+
+
+def informatics_fill_db(connection):
+    fill_db_with_default_tag("../../csvs/informatics.csv", 'Информатика', connection)
+
+
+def science_miscel_fill_db(conn):
+    fill_db_with_default_tag("../../csvs/science_miscellaneous.csv", "Наука.Разное", conn)
+
+
+def fill_db_with_default_tag(file_path, default_tag, connection):
     cursor = connection.cursor()
-    army_csv = get_data_from_file("../../csvs/army.csv")
-    data_to_save = [csv_line.strip().split(",") for csv_line in army_csv.split(",\n")]
+    raw_data = get_data_from_file(file_path)
+    data_to_save = [csv_line.strip().split(",") for csv_line in raw_data.split(",\n")]
     for csv_line_data in data_to_save:
         if len(csv_line_data) == 2:
-            sql_to_execute = get_row_insert_sql(csv_line_data[0], csv_line_data[1], 'Армия')
-            execute_queries(sql_to_execute, cursor)
+            save_to_db_with_tag(csv_line_data, default_tag, cursor)
+        elif len(csv_line_data) >= 3:
+            save_to_db_csv_line(csv_line_data, cursor)
+        else:
+            print("Can't save line " + str(csv_line_data))
 
 
-connection = get_oracle_connection('sma', 'sma')
-cursor = connection.cursor()
+def chemi_fill_db(connection):
+    fill_db_with_default_tag("../../csvs/chemotherapy.csv", 'None', connection)
 
 
-#sql_to_execute = get_row_insert_sql('WTF', 'What the fuck', 'slang')
+def math_fill_db(connection):
+    fill_db_with_default_tag("../../csvs/math.csv", 'None', connection)
+
+
+def historical_places_fill_db(connection):
+    fill_db_with_default_tag("../../csvs/historical_places.csv", 'None', connection)
+
+
+def save_to_db_csv_line(csv_line_data, cursor):
+    if len(csv_line_data) < 3:
+        print("Too short csv line!!!")
+        return
+    abbrv = csv_line_data[0]
+    tag = csv_line_data[len(csv_line_data) - 1]
+    meaning = (','.join(csv_line_data[1:-1]))
+    sql_to_execute = get_row_insert_sql(abbrv, meaning, tag)
+    execute_queries(sql_to_execute, cursor)
+
+
+def save_to_db_with_tag(csv_line_data, tag, cursor):
+    if len(csv_line_data) < 2:
+        print("Can't save line" + str(csv_line_data))
+        return
+    abbrv = csv_line_data[0]
+    meaning = csv_line_data[1]
+    sql_to_execute = get_row_insert_sql(abbrv, meaning, tag)
+    execute_queries(sql_to_execute, cursor)
+
+
+def sorkr_fill_db(conn):
+    fill_db_with_default_tag("../../csvs/full_sorkr.csv", 'None', conn)
+
+#create_db_user('sma', 'sma')
 #execute_queries(sql_to_execute, cursor)
 
 connection = get_oracle_connection('sma', 'sma')
-cursor = connection.cursor()
-chem_csv = get_data_from_file("../../csvs/chemotherapy.csv")
-data_to_save = [csv_line.strip().split(",") for csv_line in chem_csv.split(",\n")]
-for csv_line_data in data_to_save:
-    if len(csv_line_data) >= 3:
-        abbrv = csv_line_data[0]
-        tag = csv_line_data[len(csv_line_data) - 1]
-        meaning = (','.join(csv_line_data[1:-1]))[0:130]
-        sql_to_execute = get_row_insert_sql(abbrv, meaning, tag)
-        execute_queries(sql_to_execute, cursor)
+#create_tables(connection)
+#chemi_fill_db(connection)
+#historical_places_fill_db(connection)
 
+#informatics_fill_db(connection)
+#math_fill_db(connection)
+
+#science_miscel_fill_db(connection)
+
+sorkr_fill_db(connection)
 
 #execute_queries(sql, cursor)
 
