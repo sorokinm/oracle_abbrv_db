@@ -11,7 +11,7 @@ CREATE TABLE tags
     tag_id NUMBER GENERATED ALWAYS as IDENTITY(START WITH 1 INCREMENT BY 1),
     tag_name VARCHAR2(250),
     CONSTRAINT tags_pk PRIMARY KEY (tag_id),
-    CONSTRAINT tag_name UNIQUE (tag_name)
+    CONSTRAINT tag_name_u UNIQUE (tag_name)
 );
 
 CREATE TABLE abbrv_meanings
